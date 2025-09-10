@@ -3,7 +3,6 @@ import { ENV } from "./env.js";
 
 export const aj = arcjet({
   key: ENV.ARCJET_KEY,
-  env: ENV.NODE_ENV,
   characteristics: ["ip.src"],
   rules: [
     shield({ mode: "LIVE" }),
