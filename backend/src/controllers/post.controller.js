@@ -5,6 +5,7 @@ import { getAuth } from "@clerk/express";
 
 import Notification from "../models/notification.model.js";
 import Comment from "../models/comment.model.js";
+import imagekit from "../config/imagekit-uploader.js";
 
 export const getPosts = asyncHandler(async (req, res) => {
   const posts = await Post.find()
@@ -74,6 +75,38 @@ export const createPost = asyncHandler(async (req, res) => {
   if (!user) return res.status(404).json({ error: "User not found" });
 
   let imageUrl = "";
+
+  // upload image to Cloudinary if provided
+  if (imageFile) {
+    try {
+      // convert buffer to base64 for cloudinary
+      const base64Image = imageFile.buffer.toString("base64");
+
+      const uploadResponse = await imagekit.upload({
+        file: base64Image,
+        fileName: `${Date.now()}_${imageFile.originalname}`,
+        folder: "/social_media_posts",
+        useUniqueFileName: true,
+      });
+
+      imageUrl = imagekit.url({
+        src: uploadResponse.url,
+        transformation: [
+          { width: 800, height: 600, crop: "limit" },
+          { quality: "auto" },
+          { format: "auto" },
+        ],
+      });
+
+      imageUrl = uploadResponse.url;
+    } catch (uploadError) {
+      console.error(
+        "ImageKit  upload error:",
+        uploadError.message || uploadError
+      );
+      return res.status(400).json({ error: "Failed to upload image" });
+    }
+  }
 
   const post = await Post.create({
     user: user._id,
